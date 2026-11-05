@@ -11,6 +11,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- PWA Manifest -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4f46e5">
     <script>
         tailwind.config = {
             theme: {
@@ -673,8 +676,19 @@
                     synthOscillator.disconnect();
                 } catch(e) {}
             }
-        }
+       
+    }
+
     </script>
+        <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then((reg) => console.log('Service Worker terdaftar:', reg.scope))
+        .catch((err) => console.log('Gagal mendaftarkan Service Worker:', err));
+    });
+  }
+        </script>
 </body>
 </html>
 ```
