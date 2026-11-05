@@ -1,0 +1,680 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IndoMusik Player - Pemutar Musik Indonesia</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        neonCyan: '#00f2fe',
+                        neonPurple: '#9d4edd',
+                        glassBg: 'rgba(255, 255, 255, 0.05)',
+                        glassBorder: 'rgba(255, 255, 255, 0.12)',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Glassmorphism Styling */
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #090d16 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .glass-pill {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        /* Vinyl Record Spin Animation */
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .animate-spin-slow {
+            animation: spin 12s linear infinite;
+        }
+
+        .paused-spin {
+            animation-play-state: paused;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 242, 254, 0.5);
+        }
+
+        /* Neon Glow Effects */
+        .neon-glow-cyan {
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.4);
+        }
+        .neon-text-cyan {
+            text-shadow: 0 0 8px rgba(0, 242, 254, 0.6);
+        }
+        
+        /* Custom Slider Range */
+        input[type=range] {
+            accent-color: #00f2fe;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased p-3 sm:p-6 min-h-screen flex flex-col justify-between max-w-6xl mx-auto">
+
+    <!-- Header Section -->
+    <header class="w-full mb-6">
+        <div class="glass-card rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            <!-- Logo & Brand -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-purple-600 flex items-center justify-center neon-glow-cyan">
+                    <i class="fa-solid font-bold fa-compact-disc text-white text-xl animate-spin-slow"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-neonCyan via-white to-neonPurple bg-clip-text text-transparent">IndoMusik</h1>
+                    <p class="text-xs text-gray-400">Suara Terbaik Nusantara</p>
+                </div>
+            </div>
+
+            <!-- Search Bar & Genre Filters -->
+            <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                <div class="relative w-full sm:w-64">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                    <input type="text" id="searchInput" placeholder="Cari lagu atau penyanyi..." 
+                        class="w-full bg-slate-900/60 text-sm rounded-xl pl-9 pr-4 py-2 border border-white/10 focus:outline-none focus:border-neonCyan text-white placeholder-gray-400 transition-all">
+                </div>
+            </div>
+        </div>
+
+        <!-- Genre Pill Badges -->
+        <div class="flex items-center gap-2 overflow-x-auto py-3 no-scrollbar" id="genreContainer">
+            <button onclick="filterGenre('All')" class="genre-btn px-4 py-1.5 rounded-full text-xs font-medium glass-pill text-white hover:bg-neonCyan/20 hover:border-neonCyan transition-all border border-neonCyan bg-neonCyan/20" data-genre="All">Semua</button>
+            <button onclick="filterGenre('Pop Indo')" class="genre-btn px-4 py-1.5 rounded-full text-xs font-medium glass-pill text-gray-300 hover:text-white hover:bg-neonCyan/20 hover:border-neonCyan transition-all" data-genre="Pop Indo">Pop Indo</button>
+            <button onclick="filterGenre('Rock')" class="genre-btn px-4 py-1.5 rounded-full text-xs font-medium glass-pill text-gray-300 hover:text-white hover:bg-neonCyan/20 hover:border-neonCyan transition-all" data-genre="Rock">Rock</button>
+            <button onclick="filterGenre('Indie')" class="genre-btn px-4 py-1.5 rounded-full text-xs font-medium glass-pill text-gray-300 hover:text-white hover:bg-neonCyan/20 hover:border-neonCyan transition-all" data-genre="Indie">Indie / Alternative</button>
+            <button onclick="filterGenre('Etno')" class="genre-btn px-4 py-1.5 rounded-full text-xs font-medium glass-pill text-gray-300 hover:text-white hover:bg-neonCyan/20 hover:border-neonCyan transition-all" data-genre="Etno">Traditional / Etno</button>
+            <button onclick="filterGenre('Favorites')" class="genre-btn px-4 py-1.5 rounded-full text-xs font-medium glass-pill text-pink-400 hover:text-pink-300 hover:bg-pink-500/20 hover:border-pink-500 transition-all" data-genre="Favorites"><i class="fa-solid fa-heart mr-1"></i> Favorit</button>
+        </div>
+    </header>
+
+    <!-- Main Content Layout Grid -->
+    <main class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start flex-grow">
+
+        <!-- Left Column: Hero Player Section (Lg: 7 cols) -->
+        <section class="lg:col-span-7 glass-card rounded-3xl p-5 sm:p-7 flex flex-col items-center justify-between">
+            
+            <!-- Visualizer Canvas & Track Info Header -->
+            <div class="w-full flex justify-between items-center mb-4">
+                <span id="genreBadge" class="px-3 py-1 text-xs font-semibold rounded-full bg-cyan-500/20 text-neonCyan border border-cyan-500/30">Pop Indo</span>
+                <!-- Equalizer Animated Canvas -->
+                <canvas id="visualizer" class="w-24 h-8"></canvas>
+            </div>
+
+            <!-- Spinning Vinyl Album Cover -->
+            <div class="relative my-4 group">
+                <!-- Glowing Outer Ring -->
+                <div class="absolute -inset-1 bg-gradient-to-r from-neonCyan to-neonPurple rounded-full blur-md opacity-40 group-hover:opacity-75 transition duration-500"></div>
+                
+                <!-- Vinyl Disc Container -->
+                <div id="albumCoverContainer" class="relative w-52 h-52 sm:w-64 sm:h-64 rounded-full overflow-hidden border-4 border-slate-800 shadow-2xl flex items-center justify-center bg-black">
+                    <!-- Album Image -->
+                    <img id="albumCover" src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=80" alt="Album Cover" class="w-full h-full object-cover rounded-full animate-spin-slow paused-spin">
+                    <!-- Center Hole Vinyl Effect -->
+                    <div class="absolute w-12 h-12 sm:w-16 sm:h-16 bg-slate-900 rounded-full border-4 border-slate-700 flex items-center justify-center">
+                        <div class="w-4 h-4 bg-slate-950 rounded-full"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Song Info Details -->
+            <div class="text-center mt-3 mb-4 w-full px-4">
+                <h2 id="songTitle" class="text-xl sm:text-2xl font-bold text-white truncate">Pilih Lagu</h2>
+                <p id="artistName" class="text-sm text-gray-400 mt-1 truncate">IndoMusik Nusantara</p>
+            </div>
+
+            <!-- Progress Bar & Time -->
+            <div class="w-full space-y-1 mb-5">
+                <input type="range" id="progressBar" value="0" min="0" max="100" class="w-full h-1.5 bg-slate-700/60 rounded-lg appearance-none cursor-pointer">
+                <div class="flex justify-between text-xs text-gray-400 font-mono">
+                    <span id="currentTime">00:00</span>
+                    <span id="totalDuration">00:00</span>
+                </div>
+            </div>
+
+            <!-- Main Audio Controls -->
+            <div class="flex items-center justify-between w-full max-w-xs mb-4">
+                <!-- Shuffle -->
+                <button id="shuffleBtn" onclick="toggleShuffle()" class="text-gray-400 hover:text-neonCyan transition-colors p-2" title="Acak">
+                    <i class="fa-solid fa-shuffle text-base"></i>
+                </button>
+
+                <!-- Prev -->
+                <button onclick="prevSong()" class="text-white hover:text-neonCyan transition-all transform active:scale-95 p-2">
+                    <i class="fa-solid fa-backward-step text-2xl"></i>
+                </button>
+
+                <!-- Play/Pause -->
+                <button id="playBtn" onclick="togglePlayPause()" class="w-14 h-14 rounded-full bg-gradient-to-tr from-neonCyan to-purple-600 flex items-center justify-center text-white text-xl shadow-lg neon-glow-cyan transform hover:scale-105 active:scale-95 transition-all">
+                    <i id="playIcon" class="fa-solid fa-play ml-1"></i>
+                </button>
+
+                <!-- Next -->
+                <button onclick="nextSong()" class="text-white hover:text-neonCyan transition-all transform active:scale-95 p-2">
+                    <i class="fa-solid fa-forward-step text-2xl"></i>
+                </button>
+
+                <!-- Favorite -->
+                <button id="favBtn" onclick="toggleFavoriteCurrent()" class="text-gray-400 hover:text-pink-500 transition-colors p-2" title="Favorit">
+                    <i id="favIcon" class="fa-regular fa-heart text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Volume Control Bar -->
+            <div class="flex items-center gap-3 w-full max-w-xs glass-pill px-4 py-2 rounded-full">
+                <button id="muteBtn" onclick="toggleMute()" class="text-gray-400 hover:text-white">
+                    <i id="volumeIcon" class="fa-solid fa-volume-high text-xs"></i>
+                </button>
+                <input type="range" id="volumeSlider" value="80" min="0" max="100" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+            </div>
+        </section>
+
+        <!-- Right Column: Playlist & Lyrics View Toggle (Lg: 5 cols) -->
+        <section class="lg:col-span-5 glass-card rounded-3xl p-5 flex flex-col h-[520px]">
+            
+            <!-- Navigation Tabs (Playlist vs Lyrics) -->
+            <div class="flex items-center gap-2 border-b border-white/10 pb-3 mb-3">
+                <button id="tabPlaylist" onclick="switchTab('playlist')" class="flex-1 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-neonCyan/20 text-neonCyan border border-neonCyan/40 transition-all">
+                    <i class="fa-solid fa-list-ul mr-1.5"></i> Playlist
+                </button>
+                <button id="tabLyrics" onclick="switchTab('lyrics')" class="flex-1 py-2 text-xs sm:text-sm font-semibold rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-all">
+                    <i class="fa-solid fa-quote-right mr-1.5"></i> Lirik Lagu
+                </button>
+            </div>
+
+            <!-- Tab Content 1: Playlist Track Items -->
+            <div id="playlistView" class="flex-grow overflow-y-auto space-y-2 pr-1">
+                <!-- Rendered dynamically by JavaScript -->
+            </div>
+
+            <!-- Tab Content 2: Interactive Lyrics Box -->
+            <div id="lyricsView" class="hidden flex-grow overflow-y-auto p-4 rounded-2xl bg-slate-900/40 border border-white/5 text-center flex flex-col items-center justify-center">
+                <p id="lyricsContainer" class="text-sm sm:text-base text-gray-300 leading-relaxed font-light whitespace-pre-line italic">
+                    Pilih lagu untuk melihat lirik.
+                </p>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-6 text-center text-xs text-gray-500 py-2">
+        <p>© 2026 IndoMusik Player — Pemutar Musik Digital Indonesia</p>
+    </footer>
+
+    <!-- Audio Tag (Web Native Audio) -->
+    <audio id="audioPlayer" crossorigin="anonymous"></audio>
+
+    <script>
+        // Sample Audio Playlist Metadata (Royalty-free audio stream links + synth fallback support)
+        const songs = [
+            {
+                id: 1,
+                title: "Senandung Kota Nusantara",
+                artist: "Aradhana & Friends",
+                genre: "Pop Indo",
+                duration: "03:45",
+                cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&auto=format&fit=crop&q=80",
+                src: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3",
+                lyrics: `Di bawah langit biru kota ini\nKita melangkah bersama dalam waktu\nMendengar bisikan angin sore\nYang membawa cerita indah tentangmu.\n\n[Reff]\nOh kota penuh warna...\nTempat mimpi kita bermula...\nTetaplah bersinar di dalam dada.`
+            },
+            {
+                id: 2,
+                title: "Gelombang Malam Jakarta",
+                artist: "The Neon Project",
+                genre: "Indie",
+                duration: "02:58",
+                cover: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=500&auto=format&fit=crop&q=80",
+                src: "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=tropical-house-11110.mp3",
+                lyrics: `Lampu jalanan redup menanti\nLangkah kaki yang lelah berlari\nDi antara gedung bertingkat tinggi\nAku menemukan kedamaian hati.\n\n[Reff]\nMalam terus berganti...\nKisah kita takkan pernah berhenti.`
+            },
+            {
+                id: 3,
+                title: "Rhythm of Merapi",
+                artist: "Gamelan Fusion Collective",
+                genre: "Etno",
+                duration: "04:12",
+                cover: "https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=500&auto=format&fit=crop&q=80",
+                src: "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a7315b.mp3?filename=ambient-piano-amp-strings-10711.mp3",
+                lyrics: `[Instrumen Etnik Nusantara]\nAlunan kendang dan benturan saron...\nMenyatu dengan alam lereng gunung.\nWarisan nenek moyang abad pertengahan.`
+            },
+            {
+                id: 4,
+                title: "Distorsi Suara Jiwa",
+                artist: "Garuda Rocker",
+                genre: "Rock",
+                duration: "03:20",
+                cover: "https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=500&auto=format&fit=crop&q=80",
+                src: "https://cdn.pixabay.com/download/audio/2022/10/14/audio_9939f7e510.mp3?filename=energetic-hip-hop-8303.mp3",
+                lyrics: `Teriakkan katamu di depan dunia!\nJangan ragu, jangan pernah menyerah!\nApi keberanian terus menyala!\n\n[Reff]\nKita adalah pemenang sesungguhnya!`
+            },
+            {
+                id: 5,
+                title: "Melodi Senja Pantai Kuta",
+                artist: "Nusa Chill",
+                genre: "Pop Indo",
+                duration: "03:10",
+                cover: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&auto=format&fit=crop&q=80",
+                src: "https://cdn.pixabay.com/download/audio/2022/02/10/audio_fc8c45d378.mp3?filename=chill-abstract-intention-12099.mp3",
+                lyrics: `Mentari perlahan tenggelam di ufuk barat\nDesiran ombak membasuhi pasir hangat\nKenangan manis bersama kawan lama\nTersimpan abadi di pulau impian.`
+            }
+        ];
+
+        // Player State Variables
+        let currentTrackIndex = 0;
+        let isPlaying = false;
+        let isShuffle = false;
+        let filteredSongs = [...songs];
+        let favorites = new Set();
+        let audioCtx, synthOscillator; // Synth fallback for offline/CORS audio logic
+
+        // DOM Elements
+        const audio = document.getElementById('audioPlayer');
+        const playBtn = document.getElementById('playBtn');
+        const playIcon = document.getElementById('playIcon');
+        const albumCover = document.getElementById('albumCover');
+        const songTitle = document.getElementById('songTitle');
+        const artistName = document.getElementById('artistName');
+        const genreBadge = document.getElementById('genreBadge');
+        const progressBar = document.getElementById('progressBar');
+        const currentTimeEl = document.getElementById('currentTime');
+        const totalDurationEl = document.getElementById('totalDuration');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const volumeIcon = document.getElementById('volumeIcon');
+        const playlistView = document.getElementById('playlistView');
+        const lyricsContainer = document.getElementById('lyricsContainer');
+        const searchInput = document.getElementById('searchInput');
+
+        // Initializer
+        window.onload = () => {
+            renderPlaylist(filteredSongs);
+            loadTrack(currentTrackIndex);
+            setupVisualizer();
+            setupAudioEvents();
+        };
+
+        // Load Track Information into UI
+        function loadTrack(index) {
+            if (filteredSongs.length === 0) return;
+            currentTrackIndex = index;
+            const song = filteredSongs[currentTrackIndex];
+
+            songTitle.innerText = song.title;
+            artistName.innerText = song.artist;
+            genreBadge.innerText = song.genre;
+            albumCover.src = song.cover;
+            lyricsContainer.innerText = song.lyrics || "Lirik tidak tersedia.";
+
+            // Attempt setting audio source
+            audio.src = song.src;
+            
+            // Update Favorite Status Button Icon
+            updateFavoriteUI();
+            
+            // Highlight active playlist item
+            renderPlaylist(filteredSongs);
+        }
+
+        // Toggle Play & Pause
+        function togglePlayPause() {
+            if (filteredSongs.length === 0) return;
+
+            if (isPlaying) {
+                pauseSong();
+            } else {
+                playSong();
+            }
+        }
+
+        function playSong() {
+            isPlaying = true;
+            playIcon.classList.remove('fa-play');
+            playIcon.classList.add('fa-pause');
+            albumCover.classList.remove('paused-spin');
+            
+            // Audio Play with Promise Catch handling for browser autoplay policies
+            audio.play().catch(err => {
+                console.warn("Audio standard gagal diputar, menggunakan sintesis suara demo:", err);
+                playFallbackTone();
+            });
+        }
+
+        function pauseSong() {
+            isPlaying = false;
+            playIcon.classList.remove('fa-pause');
+            playIcon.classList.add('fa-play');
+            albumCover.classList.add('paused-spin');
+            audio.pause();
+            stopFallbackTone();
+        }
+
+        // Previous & Next Controls
+        function prevSong() {
+            if (isShuffle) {
+                currentTrackIndex = Math.floor(Math.random() * filteredSongs.length);
+            } else {
+                currentTrackIndex = (currentTrackIndex - 1 + filteredSongs.length) % filteredSongs.length;
+            }
+            loadTrack(currentTrackIndex);
+            if (isPlaying) playSong();
+        }
+
+        function nextSong() {
+            if (isShuffle) {
+                currentTrackIndex = Math.floor(Math.random() * filteredSongs.length);
+            } else {
+                currentTrackIndex = (currentTrackIndex + 1) % filteredSongs.length;
+            }
+            loadTrack(currentTrackIndex);
+            if (isPlaying) playSong();
+        }
+
+        function toggleShuffle() {
+            isShuffle = !isShuffle;
+            const shuffleBtn = document.getElementById('shuffleBtn');
+            if (isShuffle) {
+                shuffleBtn.classList.add('text-neonCyan');
+                shuffleBtn.classList.remove('text-gray-400');
+            } else {
+                shuffleBtn.classList.remove('text-neonCyan');
+                shuffleBtn.classList.add('text-gray-400');
+            }
+        }
+
+        // Render Tracklist Items
+        function renderPlaylist(list) {
+            playlistView.innerHTML = '';
+            
+            if (list.length === 0) {
+                playlistView.innerHTML = `<div class="text-center text-gray-400 py-10 text-xs">Lagu tidak ditemukan</div>`;
+                return;
+            }
+
+            list.forEach((song, idx) => {
+                const isActive = (idx === currentTrackIndex);
+                const isFav = favorites.has(song.id);
+
+                const trackCard = document.createElement('div');
+                trackCard.className = `flex items-center justify-between p-3 rounded-2xl cursor-pointer transition-all ${
+                    isActive 
+                    ? 'bg-gradient-to-r from-neonCyan/20 to-purple-600/20 border border-neonCyan/40 shadow-lg' 
+                    : 'hover:bg-white/5 border border-transparent'
+                }`;
+
+                trackCard.onclick = () => {
+                    loadTrack(idx);
+                    playSong();
+                };
+
+                trackCard.innerHTML = `
+                    <div class="flex items-center gap-3 truncate">
+                        <span class="text-xs font-mono text-gray-400 w-4 text-center">${idx + 1}</span>
+                        <img src="${song.cover}" alt="Cover" class="w-10 h-10 rounded-xl object-cover">
+                        <div class="truncate">
+                            <h4 class="text-xs sm:text-sm font-semibold text-white truncate ${isActive ? 'text-neonCyan' : ''}">${song.title}</h4>
+                            <p class="text-[11px] text-gray-400 truncate">${song.artist}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="event.stopPropagation(); toggleFavorite(${song.id})" class="text-gray-400 hover:text-pink-500 transition-colors p-1">
+                            <i class="${isFav ? 'fa-solid text-pink-500' : 'fa-regular'} fa-heart text-xs"></i>
+                        </button>
+                        <span class="text-xs font-mono text-gray-400">${song.duration}</span>
+                    </div>
+                `;
+
+                playlistView.appendChild(trackCard);
+            });
+        }
+
+        // Favorite Functionality
+        function toggleFavorite(id) {
+            if (favorites.has(id)) {
+                favorites.delete(id);
+            } else {
+                favorites.add(id);
+            }
+            updateFavoriteUI();
+            renderPlaylist(filteredSongs);
+        }
+
+        function toggleFavoriteCurrent() {
+            if (filteredSongs.length === 0) return;
+            const currentSong = filteredSongs[currentTrackIndex];
+            toggleFavorite(currentSong.id);
+        }
+
+        function updateFavoriteUI() {
+            if (filteredSongs.length === 0) return;
+            const currentSong = filteredSongs[currentTrackIndex];
+            const favIcon = document.getElementById('favIcon');
+            const favBtn = document.getElementById('favBtn');
+
+            if (favorites.has(currentSong.id)) {
+                favIcon.className = "fa-solid fa-heart text-lg text-pink-500";
+            } else {
+                favIcon.className = "fa-regular fa-heart text-lg text-gray-400";
+            }
+        }
+
+        // Filter Songs by Genre or Favorite
+        function filterGenre(genre) {
+            // Update Active Pill Styles
+            document.querySelectorAll('.genre-btn').forEach(btn => {
+                if (btn.getAttribute('data-genre') === genre) {
+                    btn.classList.add('border', 'border-neonCyan', 'bg-neonCyan/20', 'text-white');
+                    btn.classList.remove('text-gray-300');
+                } else {
+                    btn.classList.remove('border', 'border-neonCyan', 'bg-neonCyan/20', 'text-white');
+                    btn.classList.add('text-gray-300');
+                }
+            });
+
+            if (genre === 'All') {
+                filteredSongs = [...songs];
+            } else if (genre === 'Favorites') {
+                filteredSongs = songs.filter(s => favorites.has(s.id));
+            } else {
+                filteredSongs = songs.filter(s => s.genre === genre);
+            }
+
+            renderPlaylist(filteredSongs);
+            if (filteredSongs.length > 0) {
+                loadTrack(0);
+            }
+        }
+
+        // Live Search Input Listener
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            filteredSongs = songs.filter(s => 
+                s.title.toLowerCase().includes(query) || 
+                s.artist.toLowerCase().includes(query)
+            );
+            renderPlaylist(filteredSongs);
+        });
+
+        // Track Slider Progress Updates
+        function setupAudioEvents() {
+            audio.addEventListener('timeupdate', () => {
+                if (audio.duration) {
+                    const progressPercent = (audio.currentTime / audio.duration) * 100;
+                    progressBar.value = progressPercent;
+                    currentTimeEl.innerText = formatTime(audio.currentTime);
+                    totalDurationEl.innerText = formatTime(audio.duration);
+                }
+            });
+
+            audio.addEventListener('ended', () => {
+                nextSong();
+            });
+
+            progressBar.addEventListener('input', () => {
+                if (audio.duration) {
+                    audio.currentTime = (progressBar.value / 100) * audio.duration;
+                }
+            });
+
+            volumeSlider.addEventListener('input', (e) => {
+                const vol = e.target.value / 100;
+                audio.volume = vol;
+                if (vol === 0) {
+                    volumeIcon.className = "fa-solid fa-volume-xmark text-xs text-gray-400";
+                } else if (vol < 0.5) {
+                    volumeIcon.className = "fa-solid fa-volume-low text-xs text-white";
+                } else {
+                    volumeIcon.className = "fa-solid fa-volume-high text-xs text-white";
+                }
+            });
+        }
+
+        function toggleMute() {
+            if (audio.volume > 0) {
+                audio.volume = 0;
+                volumeSlider.value = 0;
+                volumeIcon.className = "fa-solid fa-volume-xmark text-xs text-gray-400";
+            } else {
+                audio.volume = 0.8;
+                volumeSlider.value = 80;
+                volumeIcon.className = "fa-solid fa-volume-high text-xs text-white";
+            }
+        }
+
+        function formatTime(seconds) {
+            const min = Math.floor(seconds / 60);
+            const sec = Math.floor(seconds % 60);
+            return `${min < 10 ? '0' : ''}${min}:${sec < 10 ? '0' : ''}${sec}`;
+        }
+
+        // Tab Switching Logic (Playlist vs Lyrics)
+        function switchTab(tab) {
+            const tabPlaylist = document.getElementById('tabPlaylist');
+            const tabLyrics = document.getElementById('tabLyrics');
+            const playlistView = document.getElementById('playlistView');
+            const lyricsView = document.getElementById('lyricsView');
+
+            if (tab === 'playlist') {
+                playlistView.classList.remove('hidden');
+                lyricsView.classList.add('hidden');
+                tabPlaylist.className = "flex-1 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-neonCyan/20 text-neonCyan border border-neonCyan/40 transition-all";
+                tabLyrics.className = "flex-1 py-2 text-xs sm:text-sm font-semibold rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-all";
+            } else {
+                playlistView.classList.add('hidden');
+                lyricsView.classList.remove('hidden');
+                tabLyrics.className = "flex-1 py-2 text-xs sm:text-sm font-semibold rounded-xl bg-neonCyan/20 text-neonCyan border border-neonCyan/40 transition-all";
+                tabPlaylist.className = "flex-1 py-2 text-xs sm:text-sm font-semibold rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-all";
+            }
+        }
+
+        // Canvas Equalizer Animation Simulation
+        function setupVisualizer() {
+            const canvas = document.getElementById('visualizer');
+            const ctx = canvas.getContext('2d');
+            
+            function animateBars() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const numBars = 6;
+                const barWidth = 4;
+                const gap = 4;
+                
+                for (let i = 0; i < numBars; i++) {
+                    // Dynamic heights based on playing state
+                    let barHeight = isPlaying ? Math.floor(Math.random() * (canvas.height - 5)) + 4 : 4;
+                    
+                    const x = i * (barWidth + gap) + 10;
+                    const y = canvas.height - barHeight;
+
+                    // Neon Gradient
+                    const gradient = ctx.createLinearGradient(0, canvas.height, 0, 0);
+                    gradient.addColorStop(0, '#00f2fe');
+                    gradient.addColorStop(1, '#9d4edd');
+
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(x, y, barWidth, barHeight);
+                }
+                
+                requestAnimationFrame(animateBars);
+            }
+            animateBars();
+        }
+
+        // Web Audio API Fallback (Generates pleasant ambient melody sound when standard audio streams fail)
+        function playFallbackTone() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                synthOscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                synthOscillator.type = 'sine';
+                synthOscillator.frequency.setValueAtTime(440, audioCtx.currentTime); // Pitch A4
+                gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                
+                synthOscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                synthOscillator.start();
+            } catch (e) {
+                console.log("Web Audio API not supported", e);
+            }
+        }
+
+        function stopFallbackTone() {
+            if (synthOscillator) {
+                try {
+                    synthOscillator.stop();
+                    synthOscillator.disconnect();
+                } catch(e) {}
+            }
+        }
+    </script>
+</body>
+</html>
+```
